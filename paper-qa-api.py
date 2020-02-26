@@ -3,11 +3,14 @@ from werkzeug.utils import secure_filename
 from flask import Flask
 from flask import request
 from flask import jsonify
-from flask import flash
+from flask import make_response
 from flask import redirect
 from flask import url_for
 from waitress import serve
+import pdfplumber
 import json
+import PyPDF2
+from pdfminer import high_level
 import os
 
 UPLOAD_FOLDER = 'files/'
@@ -15,7 +18,6 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 app = Flask(__name__)
 model = None
-current_file = None
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
@@ -37,12 +39,21 @@ def upload_file():
             print('No selected file')
             return redirect(request.url)
         if file and allowed_file(file.filename):
-            global current_file
             filename = secure_filename(file.filename)
-            current_file = filename
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return 'ok'
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            json_response = {'paper': extract_text_from_pdf(file_path)}
+            response = jsonify(json_response)
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response
     return 'no ok'
+
+
+def extract_text_from_pdf(file_path):
+    text = high_level.extract_text(file_path)
+    one_line_text = str.join(" ", text.splitlines())
+    one_line_text = one_line_text.replace('-', '')
+    return one_line_text
 
 
 def setup_model():
