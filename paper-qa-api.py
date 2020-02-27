@@ -3,15 +3,12 @@ from werkzeug.utils import secure_filename
 from flask import Flask
 from flask import request
 from flask import jsonify
-from flask import make_response
 from flask import redirect
-from flask import url_for
-from waitress import serve
-import pdfplumber
+from flask_cors import CORS
 import json
-import PyPDF2
 from pdfminer import high_level
 import os
+import time
 
 UPLOAD_FOLDER = 'files/'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -19,6 +16,7 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 app = Flask(__name__)
 model = None
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+CORS(app)
 
 
 def allowed_file(filename):
@@ -27,10 +25,9 @@ def allowed_file(filename):
 
 
 @app.route('/upload_pdf', methods=['GET', 'POST'])
-def upload_file():
+def upload_pdf():
     if request.method == 'POST':
         if 'file' not in request.files:
-            print('oi')
             return redirect(request.url)
         file = request.files['file']
         # if user does not select file, browser also
@@ -44,9 +41,19 @@ def upload_file():
             file.save(file_path)
             json_response = {'paper': extract_text_from_pdf(file_path)}
             response = jsonify(json_response)
-            response.headers.add('Access-Control-Allow-Origin', '*')
             return response
     return 'no ok'
+
+
+@app.route('/ask_paper', methods=['POST'])
+def ask_paper():
+    if request.method == 'POST':
+        json_string = request.get_json()
+        data_dump = json.dumps(json_string)
+        data = json.loads(data_dump)
+        answer = {'answer': model([data.get('paper_text')], [data.get('question')])[0]}
+        response = jsonify(answer)
+        return response
 
 
 def extract_text_from_pdf(file_path):
@@ -58,15 +65,14 @@ def extract_text_from_pdf(file_path):
 
 def setup_model():
     global model
+    st = time.time()
     print("Loading model...")
-    model = build_model(configs.squad.squad_bert)
-    input_text = 'The U.S. is ready to engage in talks about North Korea’s nuclear program even as it maintains pressure on Kim Jong Un’s regime, the Washington Post reported, citing an interview with Vice President Mike Pence. Pence and South Korea’s President Moon Jae-in agreed on a post-Olympics strategy during conversations at the Winter Olympics in the South Korean resort of Pyeongchang that Pence dubbed “maximum pressure and engagement at the same time.” Pence spoke in an interview on his way home from the Winter Olympics. “The point is, no pressure comes off until they are actually doing something that the alliance believes represents a meaningful step toward denuclearization,” the Post quoted Pence as saying. “So the maximum pressure campaign is going to continue and intensify. But if you want to talk, we’ll talk.”'
-    print(model([input_text], ['What country is under the pressure?']))
+    model = build_model(configs.squad.squad_bert_infer, download=True)
+    print('loaded in: ', time.time() - st)
 
 
 def main():
-    # setup_model()
-    # serve(app, host='0.0.0.0', port=5000)
+    setup_model()
     app.run(debug=False)
 
 
