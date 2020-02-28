@@ -93,7 +93,7 @@ def setup_model():
 
 def main():
     setup_model()
-    # extract_text_from_pdf('599.pdf')
+    # extract_text_from_pdf('files/599.pdf')
     serve(app, host='0.0.0.0', port=5000)
     # app.run(debug=False, host='0.0.0.0')
 
