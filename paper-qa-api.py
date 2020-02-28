@@ -7,7 +7,6 @@ from flask import jsonify
 from flask import redirect
 from flask_cors import CORS
 from tika import parser
-from waitress import serve
 import json
 import os
 import time
@@ -55,10 +54,8 @@ def ask_paper():
         json_string = request.get_json()
         data_dump = json.dumps(json_string)
         data = json.loads(data_dump)
-        answer = model([data.get('paper')], [data.get('question')])[0]
-        if not answer:
-            answer = 'i dont know how to answer that, can you ask another question?'
-        answer_json = {'answer': answer}
+        answer = model([data.get('paper')], [data.get('question')])
+        answer_json = {'answer': answer[0]}
         response = jsonify(answer_json)
         return response
 
@@ -93,9 +90,8 @@ def setup_model():
 
 def main():
     setup_model()
-    # extract_text_from_pdf('files/599.pdf')
-    serve(app, host='0.0.0.0', port=5000)
-    # app.run(debug=False, host='0.0.0.0')
+    extract_text_from_pdf('files/599.pdf')
+    app.run(debug=True, host='0.0.0.0', port=5000)
 
 
 if __name__ == '__main__':
