@@ -7,7 +7,7 @@ Upload the pdf of any article in english and ask her any questions about its con
 
 Some filters are applied to the article to remove the garbage and leave only the necessary information and the model used is Bert from the DeepPavlov library, which is a transformer that uses the seq2seq neural network architecture to model language, the model was trained in english with the Squad dataset to answer questions given a text.
 
-[Webapp]: https://github.com/lucasraggi89/paper-qa-bert-webapp
+[Webapp](https://github.com/lucasraggi89/paper-qa-bert-webapp)
 
 ## How to use the project? - Without docker
 
